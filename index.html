@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FUKUOKA RAMEN MAP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%; height: 100%;
+      background: #1a1a1a;
+      font-family: 'Noto Sans JP', sans-serif;
+      overflow: hidden;
+    }
+
+    /* ===== 背景装飾ライン ===== */
+    .bg-line {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .bg-line::before {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 3px;
+      background: #c62d2d;
+    }
+    .bg-line::after {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 1px;
+      height: 40%;
+      background: rgba(198, 45, 45, 0.15);
+    }
+
+    /* ===== メインコンテナ ===== */
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 100%; height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      padding: 40px 24px;
+    }
+
+    /* ===== バッジ ===== */
+    .badge {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.25em;
+      color: rgba(255,255,255,0.35);
+      margin-bottom: 16px;
+      animation: fadeUp 0.6s ease both;
+    }
+
+    /* ===== タイトル ===== */
+    .title-wrap {
+      text-align: center;
+      margin-bottom: 8px;
+      animation: fadeUp 0.7s ease 0.1s both;
+    }
+    .title-sub {
+      font-size: 11px;
+      letter-spacing: 0.3em;
+      color: rgba(255,255,255,0.35);
+      margin-bottom: 6px;
+      display: block;
+    }
+    .title-main {
+      font-family: 'Bebas Neue', 'Noto Sans JP', sans-serif;
+      font-size: clamp(52px, 14vw, 80px);
+      color: #fff;
+      letter-spacing: 0.08em;
+      line-height: 0.9;
+      display: block;
+    }
+    .title-accent {
+      display: block;
+      width: 40px;
+      height: 3px;
+      background: #c62d2d;
+      margin: 14px auto 0;
+    }
+
+    /* ===== サブタイトル ===== */
+    .subtitle {
+      font-size: 12px;
+      color: rgba(255,255,255,0.4);
+      letter-spacing: 0.1em;
+      margin-top: 20px;
+      margin-bottom: 40px;
+      animation: fadeUp 0.7s ease 0.2s both;
+    }
+
+    /* ===== ボタン (PC) ===== */
+    .btn-wrap {
+      animation: fadeUp 0.7s ease 0.35s both;
+    }
+    .open-btn {
+      display: inline-block;
+      padding: 14px 48px;
+      background: #c62d2d;
+      color: #fff;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      border-radius: 8px;
+      font-family: 'Noto Sans JP', sans-serif;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.2s;
+    }
+    .open-btn:hover { background: #a82424; }
+    .open-btn span { position: relative; z-index: 1; }
+
+    /* ===== モバイルボタン ===== */
+    .m-btn-wrap {
+      display: none;
+      animation: fadeUp 0.7s ease 0.35s both;
+    }
+    .m-open-btn {
+      display: block;
+      padding: 15px 0;
+      width: 220px;
+      text-align: center;
+      background: #c62d2d;
+      color: #fff;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      border-radius: 8px;
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+
+    @media screen and (max-width: 480px) {
+      .btn-wrap { display: none; }
+      .m-btn-wrap { display: block; }
+      .title-main { font-size: clamp(52px, 18vw, 72px); }
+    }
+
+    /* ===== フッター ===== */
+    .footer {
+      position: fixed;
+      bottom: 12px;
+      left: 0; right: 0;
+      text-align: center;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.15);
+      z-index: 1;
+    }
+
+    /* ===== アニメーション ===== */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-line"></div>
+
+  <div class="container">
+    <div class="badge">FUKUOKA · JAPAN</div>
+
+    <div class="title-wrap">
+      <span class="title-sub">福岡ラーメンガイド</span>
+      <span class="title-main">RAMEN MAP</span>
+      <span class="title-accent"></span>
+    </div>
+
+    <div class="subtitle">福岡のラーメン店を地図で探す</div>
+
+    <div class="btn-wrap">
+      <a href="map.html" class="open-btn"><span>マップを開く</span></a>
+    </div>
+    <div class="m-btn-wrap">
+      <a href="map.html" class="m-open-btn">マップを開く</a>
+    </div>
+  </div>
+
+  <div class="footer">FUKUOKA RAMEN MAP</div>
+
+</body>
+</html>

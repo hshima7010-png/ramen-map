@@ -1,0 +1,39 @@
+/* フォームのスタイル */
+form {
+    max-width: 400px;
+    margin: 0 auto;
+    text-align: center; /* フォーム全体を中央に配置 */
+  }
+  
+  h1 {
+    margin-top: 100px;
+    width: 100%; /* h1要素を100%幅に指定 */
+    text-align: center; /* テキストの配置を中央に指定 */
+  }
+  /* ラベルのスタイル */
+  label {
+    display: block;
+    margin-bottom: 25px;
+    margin-top: 25px;
+    font-weight: 500;
+    text-align: left; /* ラベルを左寄せに設定 */
+  }
+  
+  /* 入力フィールドのスタイル */
+  input[type="text"],
+  input[type="email"],
+  textarea {
+    width: 100%;
+    padding: 5px;
+    margin-bottom: 10px;
+  }
+  
+  /* 送信ボタンのスタイル */
+  input[type="submit"] {
+    background-color: #ff0000;
+    color: #fff;
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+  }
+  

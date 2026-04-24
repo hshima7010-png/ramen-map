@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+  <title>お気に入り - FUKUOKA RAMEN MAP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/map.css">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans JP', sans-serif; background: #1a1a1a; }
+
+    /* ===== ヘッダー ===== */
+    .header {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      z-index: 1000;
+      background: #1a1a1a;
+      border-bottom: 3px solid #c62d2d;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      height: 44px;
+    }
+    .header-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.15em;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header-count {
+      font-size: 11px;
+      color: rgba(255,255,255,0.5);
+      font-weight: 500;
+    }
+    .header-count span {
+      color: #c62d2d;
+      font-weight: 700;
+    }
+    .back-btn {
+      font-size: 11px;
+      font-weight: 600;
+      color: #fff;
+      text-decoration: none;
+      background: rgba(255,255,255,0.1);
+      padding: 5px 12px;
+      border-radius: 6px;
+      border: 0.5px solid rgba(255,255,255,0.15);
+      letter-spacing: 0.05em;
+    }
+
+    /* ===== マップ ===== */
+    #map {
+      position: fixed;
+      top: 44px;
+      left: 0;
+      width: 100%;
+      height: calc(100% - 44px);
+    }
+
+    /* ===== 空状態 ===== */
+    .empty-overlay {
+      display: none;
+      position: fixed;
+      top: 44px; left: 0;
+      width: 100%;
+      height: calc(100% - 44px);
+      background: #1a1a1a;
+      z-index: 100;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 40px 24px;
+    }
+    .empty-overlay.visible { display: flex; }
+    .empty-icon {
+      font-size: 48px;
+      opacity: 0.25;
+      margin-bottom: 20px;
+    }
+    .empty-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+      letter-spacing: 0.05em;
+    }
+    .empty-desc {
+      font-size: 13px;
+      color: rgba(255,255,255,0.45);
+      line-height: 1.8;
+      margin-bottom: 28px;
+    }
+    .empty-btn {
+      display: inline-block;
+      background: #c62d2d;
+      color: #fff;
+      text-decoration: none;
+      padding: 12px 28px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    /* ===== フィルターバー（地図上） ===== */
+    .filter-bar-wrap {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 6px;
+      z-index: 10;
+    }
+    .filter-bar-btn {
+      padding: 7px 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(0,0,0,0.12);
+      background: rgba(255,255,255,0.95);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      font-family: 'Noto Sans JP', sans-serif;
+      color: #444;
+      backdrop-filter: blur(4px);
+      transition: all 0.18s;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+    .filter-bar-btn.active {
+      background: #1a1a1a;
+      color: #fff;
+      border-color: #1a1a1a;
+    }
+
+    /* ===== クリアボタン（地図上） ===== */
+    .clear-wrap {
+      position: absolute;
+      bottom: 20px;
+      right: 16px;
+      z-index: 10;
+    }
+    .clear-map-btn {
+      background: rgba(26,26,26,0.9);
+      color: rgba(255,255,255,0.7);
+      border: 0.5px solid rgba(255,255,255,0.15);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: 'Noto Sans JP', sans-serif;
+      backdrop-filter: blur(4px);
+      transition: all 0.2s;
+    }
+    .clear-map-btn:hover { color: #c62d2d; border-color: #c62d2d; }
+
+    /* ===== トースト ===== */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #1a1a1a;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      z-index: 99999;
+      opacity: 0;
+      transition: all 0.25s ease;
+      white-space: nowrap;
+      border: 0.5px solid rgba(255,255,255,0.15);
+      pointer-events: none;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ヘッダー -->
+  <header class="header">
+    <div class="header-title">FUKUOKA RAMEN MAP</div>
+    <div class="header-right">
+      <div class="header-count">⭐ <span id="fav-count">0</span> 件</div>
+      <a href="map.html" class="back-btn">← マップへ</a>
+    </div>
+  </header>
+
+  <!-- 空状態 -->
+  <div class="empty-overlay" id="empty-overlay">
+    <div class="empty-icon">🍜</div>
+    <div class="empty-title">お気に入りがありません</div>
+    <div class="empty-desc">マップでお店のマーカーをタップして<br>☆ ボタンで登録してください</div>
+    <a href="map.html" class="empty-btn">マップを開く</a>
+  </div>
+
+  <!-- マップ -->
+  <div id="map" style="position:relative;"></div>
+
+  <!-- トースト -->
+  <div class="toast" id="toast"></div>
+
+  <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+
+  <script>
+    // ===== お気に入りデータ =====
+    function getFavorites() {
+      try { return JSON.parse(localStorage.getItem('fukuoka_ramen_favorites') || '[]'); }
+      catch(e) { return []; }
+    }
+    function saveFavorites(favs) {
+      localStorage.setItem('fukuoka_ramen_favorites', JSON.stringify(favs));
+    }
+    function updateCount() {
+      document.getElementById('fav-count').textContent = getFavorites().length;
+    }
+
+    // ===== トースト =====
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(t._timer);
+      t._timer = setTimeout(() => t.classList.remove('show'), 2200);
+    }
+
+    // ===== 全削除 =====
+    function clearAll() {
+      if (getFavorites().length === 0) return;
+      if (confirm('お気に入りをすべて削除しますか？')) {
+        saveFavorites([]);
+        showToast('すべて削除しました');
+        setTimeout(() => location.reload(), 800);
+      }
+    }
+
+    // ===== お気に入り削除 =====
+    function removeFav(id) {
+      saveFavorites(getFavorites().filter(f => String(f.id) !== String(id)));
+      updateCount();
+      showToast('お気に入りを削除しました');
+      setTimeout(() => location.reload(), 800);
+    }
+
+    // ===== アイコン =====
+    const ICON_MAP = {
+      'ラーメン':  'images/ramen-black-makaer.png',
+      'つけ麺':   'images/ramen-red-makaer.png',
+      'まぜそば': 'images/ramen-orange-makaer.png',
+    };
+
+    // ===== 情報ウィンドウHTML =====
+    function buildInfoHTML(shop) {
+      const mapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(shop.name + ' 福岡');
+      return '<div style="font-family:\'Noto Sans JP\',sans-serif;width:260px;overflow:hidden;border-radius:12px;">'
+        + '<div style="background:#1a1a1a;padding:14px 16px;">'
+        + '<div style="font-size:14px;font-weight:700;color:#fff;line-height:1.4;margin-bottom:4px;">' + shop.name + '</div>'
+        + '<div style="font-size:11px;color:rgba(255,255,255,0.55);">' + (shop.genre || 'ラーメン') + (shop.address ? ' · ' + shop.address.replace(/〒\d{3}-\d{4}\s*/,'').split(' ')[0] : '') + '</div>'
+        + '</div>'
+        + '<div style="padding:12px 16px;background:#fff;">'
+        + (shop.hours  ? '<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#555;margin-bottom:6px;"><span>🕐</span>' + shop.hours + '</div>' : '')
+        + (shop.closed ? '<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#555;margin-bottom:6px;"><span>🗓</span>定休日: ' + shop.closed + '</div>' : '')
+        + (shop.menu   ? '<div style="font-size:11px;color:#888;margin-top:4px;padding-top:8px;border-top:0.5px solid #eee;line-height:1.7;">' + shop.menu.replace(/\//g, ' · ') + '</div>' : '')
+        + '</div>'
+        + '<div style="display:flex;border-top:0.5px solid #eee;">'
+        + '<button onclick="removeFav(\'' + shop.id + '\')" style="flex:1;padding:11px 8px;font-size:12px;font-weight:600;border:none;cursor:pointer;border-right:0.5px solid #eee;font-family:\'Noto Sans JP\',sans-serif;background:transparent;color:#c62d2d;">⭐ 解除する</button>'
+        + '<a href="' + mapsUrl + '" target="_blank" style="flex:1;padding:11px 8px;font-size:12px;font-weight:600;color:#1a1a1a;text-decoration:none;text-align:center;font-family:\'Noto Sans JP\',sans-serif;display:flex;align-items:center;justify-content:center;">地図で開く →</a>'
+        + '</div></div>';
+    }
+
+    // ===== フィルター =====
+    let allMarkers = [];
+    let currentFilter = 'all';
+    function setFilter(genre) {
+      currentFilter = genre;
+      document.querySelectorAll('.filter-bar-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.genre === genre);
+      });
+      allMarkers.forEach(({ marker, shop }) => {
+        marker.setVisible(genre === 'all' || shop.genre === genre);
+      });
+    }
+
+    // ===== マップ初期化 =====
+    function initMap() {
+      const favs = getFavorites();
+      updateCount();
+
+      if (favs.length === 0) {
+        document.getElementById('empty-overlay').classList.add('visible');
+        return;
+      }
+
+      const validFavs = favs.filter(f => !isNaN(parseFloat(f.lat)) && !isNaN(parseFloat(f.lng)));
+      if (validFavs.length === 0) {
+        document.getElementById('empty-overlay').classList.add('visible');
+        return;
+      }
+
+      // 中心座標
+      const avgLat = validFavs.reduce((s, f) => s + parseFloat(f.lat), 0) / validFavs.length;
+      const avgLng = validFavs.reduce((s, f) => s + parseFloat(f.lng), 0) / validFavs.length;
+
+      const map = new google.maps.Map(document.getElementById('map'), {
+        center: { lat: avgLat, lng: avgLng },
+        zoom: validFavs.length === 1 ? 16 : 13,
+        mapId: '90f87356969d889c',
+        controlSize: 30,
+      });
+
+      const infoWindow = new google.maps.InfoWindow({ pixelOffset: new google.maps.Size(0, -8) });
+      const iconSize   = new google.maps.Size(36, 36);
+
+      validFavs.forEach(shop => {
+        const marker = new google.maps.Marker({
+          position: { lat: parseFloat(shop.lat), lng: parseFloat(shop.lng) },
+          map,
+          title: shop.name,
+          optimized: false,
+          icon: { url: ICON_MAP[shop.genre] || ICON_MAP['ラーメン'], scaledSize: iconSize },
+        });
+        marker.addListener('click', () => {
+          infoWindow.close();
+          infoWindow.setContent(buildInfoHTML(shop));
+          infoWindow.open(map, marker);
+        });
+        allMarkers.push({ marker, shop });
+      });
+
+      // フィルターバー
+      const filterWrap = document.createElement('div');
+      filterWrap.className = 'filter-bar-wrap';
+      const genres = ['all', ...new Set(validFavs.map(f => f.genre))];
+      const labels  = { all: 'すべて', 'ラーメン': 'ラーメン', 'つけ麺': 'つけ麺', 'まぜそば': 'まぜそば' };
+      genres.forEach(genre => {
+        const btn = document.createElement('button');
+        btn.className = 'filter-bar-btn' + (genre === 'all' ? ' active' : '');
+        btn.dataset.genre = genre;
+        btn.textContent = labels[genre] || genre;
+        btn.addEventListener('click', () => setFilter(genre));
+        filterWrap.appendChild(btn);
+      });
+      document.getElementById('map').appendChild(filterWrap);
+
+      // クリアボタン
+      const clearWrap = document.createElement('div');
+      clearWrap.className = 'clear-wrap';
+      const clearBtn = document.createElement('button');
+      clearBtn.className = 'clear-map-btn';
+      clearBtn.textContent = 'すべて削除';
+      clearBtn.addEventListener('click', clearAll);
+      clearWrap.appendChild(clearBtn);
+      document.getElementById('map').appendChild(clearWrap);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.body.addEventListener('touchmove', (e) => {
+        if (e.touches.length > 1) e.preventDefault();
+      }, { passive: false });
+    });
+
+    window.initMap = initMap;
+  </script>
+
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDuOh-epC9O41rcLbHCnDgaqJiSMKHGp8g&callback=initMap" async defer></script>
+
+</body>
+</html> 

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+  <title>FUKUOKA RAMEN MAP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Noto Sans JP', sans-serif; }
+
+    /* ===== スプラッシュ ===== */
+    #splash {
+      position: fixed;
+      inset: 0;
+      z-index: 9999999;
+      background: #1a1a1a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    #splash-title { font-size: 15px; font-weight: 700; color: #fff; letter-spacing: 0.22em; margin-bottom: 6px; }
+    #splash-sub   { font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 0.12em; }
+    #splash-bar   { position: absolute; bottom: 0; left: 0; height: 3px; width: 0%; background: #c62d2d; animation: splashLoad 0.9s ease forwards; }
+    @keyframes splashLoad { from { width: 0%; } to { width: 100%; } }
+
+    /* ===== ヘッダーバー（高さ44px） ===== */
+    .site-header {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 44px;
+      background: #1a1a1a;
+      border-bottom: 3px solid #c62d2d;
+      z-index: 99998;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .site-header-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.18em;
+    }
+
+    /* ===== ハンバーガーボタン（ヘッダー右端） ===== */
+    .openbtn1 {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 44px;
+      height: 44px;
+      z-index: 999999;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+    }
+    .openbtn-area { display: flex; flex-direction: column; gap: 5px; }
+    .openbtn1 span {
+      display: block;
+      width: 20px;
+      height: 2px;
+      background: #fff;
+      border-radius: 2px;
+      transition: all 0.3s ease;
+    }
+    .openbtn1.active span:nth-of-type(1) { transform: translateY(7px) rotate(-45deg); }
+    .openbtn1.active span:nth-of-type(2) { opacity: 0; }
+    .openbtn1.active span:nth-of-type(3) { transform: translateY(-7px) rotate(45deg); }
+
+    /* ===== ナビゲーション ===== */
+    #g-nav {
+      position: fixed;
+      top: -110%;
+      left: 0;
+      width: 100%;
+      height: 100vh;
+      background: #1a1a1a;
+      z-index: 9999;
+      transition: top 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #g-nav.panelactive { top: 0; }
+    #g-nav.panelactive #g-nav-list {
+      position: fixed;
+      width: 100%;
+      height: 100vh;
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    #g-nav ul {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      list-style: none;
+      text-align: center;
+    }
+    #g-nav li a {
+      color: #fff;
+      text-decoration: none;
+      padding: 12px 20px;
+      display: block;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      transition: color 0.2s;
+    }
+    #g-nav li a:hover { color: #c62d2d; }
+
+    /* ===== アコーディオン ===== */
+    .l-accordion { width: 220px; margin: 0 auto; }
+    .l-accordion-switch {
+      cursor: pointer;
+      padding: 12px 20px;
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.08em;
+      text-align: center;
+    }
+    .l-accordion-switch::before { content: "+ "; color: #c62d2d; }
+    .l-accordion.inside .l-accordion-switch::before { content: "− "; }
+    .l-accordion-inside { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+    .l-accordion.inside .l-accordion-inside { max-height: 300px; }
+    .l-accordion-links { padding: 4px 20px 12px; text-align: center; }
+    .l-accordion-links div { margin-bottom: 4px; }
+    .l-accordion-links a {
+      color: rgba(255,255,255,0.6);
+      text-decoration: none;
+      font-size: 16px;
+      font-weight: 500;
+      padding: 8px 0;
+      display: block;
+      transition: color 0.2s;
+    }
+    .l-accordion-links a:hover { color: #c62d2d; }
+
+    /* ===== マップ（ヘッダーの下から全画面） ===== */
+    #map {
+      position: fixed;
+      top: 44px;
+      left: 0;
+      width: 100%;
+      height: calc(100% - 44px);
+    }
+
+    /* ===== Google Maps UI調整 ===== */
+    .ui-button {
+      background: #fff;
+      border: none;
+      border-radius: 4px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+      margin: 8px;
+      padding: 0 10px;
+      font-size: 16px;
+      height: 36px;
+      cursor: pointer;
+    }
+    @media screen and (max-width: 480px) { .ui-button { display: none; } }
+    .ui-button:hover { background: #1a1a1a; color: #fff; }
+
+    .custom-map-control-button {
+      background: #fff;
+      border: none;
+      border-radius: 4px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+      margin: 8px;
+      padding: 0 12px;
+      font-size: 13px;
+      font-family: 'Noto Sans JP', sans-serif;
+      height: 36px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .custom-map-control-button:hover { background: #c62d2d; color: #fff; }
+  </style>
+
+  <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+  <script src="js/l-accordion.js"></script>
+  <script src="nav.js"></script>
+  <script src="js/map.js"></script>
+</head>
+<body>
+
+  <!-- スプラッシュ -->
+  <div id="splash">
+    <div id="splash-title">FUKUOKA RAMEN MAP</div>
+    <div id="splash-sub">福岡ラーメンガイド</div>
+    <div id="splash-bar"></div>
+  </div>
+
+  <!-- ヘッダーバー -->
+  <header class="site-header">
+    <div class="site-header-title">FUKUOKA RAMEN MAP</div>
+  </header>
+
+  <!-- ハンバーガーボタン -->
+  <div class="openbtn1">
+    <div class="openbtn-area">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+
+  <!-- ナビゲーション -->
+  <nav id="g-nav">
+    <div id="g-nav-list">
+      <ul class="over">
+        <li><a href="map.html">マップ</a></li>
+        <div class="l-accordion">
+          <div class="l-accordion-switch">ジャンル</div>
+          <div class="l-accordion-inside">
+            <div class="l-accordion-links">
+              <div><a href="#" onclick="setFilter('ラーメン');$('.openbtn1').removeClass('active');$('#g-nav').removeClass('panelactive');return false;">ラーメン</a></div>
+              <div><a href="#" onclick="setFilter('つけ麺');$('.openbtn1').removeClass('active');$('#g-nav').removeClass('panelactive');return false;">つけ麺</a></div>
+              <div><a href="#" onclick="setFilter('まぜそば');$('.openbtn1').removeClass('active');$('#g-nav').removeClass('panelactive');return false;">まぜそば</a></div>
+            </div>
+          </div>
+        </div>
+        <li><a href="okiniiri.html">お気に入り</a></li>
+        <li><a href="contact.html">お問い合わせ</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- マップ -->
+  <div id="map"></div>
+
+  <script>
+    window.addEventListener('load', function() {
+      var splash = document.getElementById('splash');
+      if (!splash) return;
+      setTimeout(function() {
+        splash.style.transition = 'opacity 0.4s ease';
+        splash.style.opacity = '0';
+        setTimeout(function() { splash.style.display = 'none'; }, 400);
+      }, 900);
+    });
+  </script>
+
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDuOh-epC9O41rcLbHCnDgaqJiSMKHGp8g&callback=initMap" async defer></script>
+
+</body>
+</html>
