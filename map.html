@@ -223,16 +223,7 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    const fukuokaShops = [
-      { id: "fk_01", name: "博多一双 博多駅東本店", genre: "ラーメン", lat: 33.5898, lng: 130.4230, hours: "11:00〜24:00", closed: "無休", address: "福岡市博多区博多駅東3-1-6", menu: "豚骨ラーメン / 特製ラーメン" },
-      { id: "fk_02", name: "博多らーめん Shin-Shin 天神本店", genre: "ラーメン", lat: 33.5915, lng: 130.3985, hours: "11:00〜翌3:00", closed: "日曜日", address: "福岡市中央区天神3-2-19", menu: "博多ShinShinラーメン / 焼きラーメン" },
-      { id: "fk_03", name: "元祖長浜屋", genre: "ラーメン", lat: 33.5985, lng: 130.3912, hours: "6:00〜1:45", closed: "なし", address: "福岡市中央区長浜2-5-25", menu: "ラーメン" },
-      { id: "fk_04", name: "麺や 兼トラ", genre: "つけ麺", lat: 33.5862, lng: 130.4005, hours: "11:00〜23:00", closed: "不定休", address: "福岡市中央区渡辺通4-1-14", menu: "濃厚つけめん" },
-      { id: "fk_05", name: "まぜそば ラーメン 兼トラ", genre: "まぜそば", lat: 33.5880, lng: 130.3990, hours: "11:00〜22:00", closed: "無休", address: "福岡市中央区天神", menu: "台湾まぜそば" },
-      { id: "fk_06", name: "博多一幸舎 総本店", genre: "ラーメン", lat: 33.5882, lng: 130.4182, hours: "11:00〜24:00", closed: "無休", address: "福岡市博多区博多駅前3-23-12", menu: "元祖泡系豚骨ラーメン" },
-      { id: "fk_07", name: "ふくちゃんラーメン 田隈本店", genre: "ラーメン", lat: 33.5480, lng: 130.3380, hours: "11:00〜21:00", closed: "火曜日", address: "福岡市早良区田隈2-24-2", menu: "チャーシューメン" }
-    ];
-
+    let fukuokaShops = [];
     let map;
     let markers = [];
 
@@ -278,9 +269,9 @@
           <div style="font-size:11px;color:#ccc;">${shop.genre} · ${shop.address}</div>
         </div>
         <div style="padding:10px;font-size:12px;color:#333;background:#fff;">
-          <div>🕐 ${shop.hours}</div>
-          <div>🗓 定休日: ${shop.closed}</div>
-          <div style="font-size:11px;color:#666;margin-top:4px;">${shop.menu}</div>
+          <div>🕐 ${shop.hours || '情報なし'}</div>
+          <div>🗓 定休日: ${shop.closed || '情報なし'}</div>
+          <div style="font-size:11px;color:#666;margin-top:4px;">${shop.menu || '詳細メニューなし'}</div>
         </div>
         <div style="display:flex;border-top:1px solid #eee;background:#fff;">
           <button onclick="toggleFav('${shop.id}');" style="flex:1;padding:8px;font-size:11px;border:none;background:none;color:#c62d2d;font-weight:bold;cursor:pointer;">
@@ -291,9 +282,20 @@
       </div>`;
     }
 
-    function initMap() {
-      // マップの初期化
-      map = L.map('map').setView([33.5900, 130.4010], 12);
+    async function initMap() {
+      try {
+        // dataフォルダ内のshops.jsonからデータを非同期で取得
+        const response = await fetch('data/shops.json');
+        if (!response.ok) throw new Error('データファイルの取得に失敗しました');
+        fukuokaShops = await response.json();
+      } catch (error) {
+        console.error(error);
+        showToast('店舗データの読み込みに失敗しました');
+        return;
+      }
+
+      // マップの初期化（福岡中心）
+      map = L.map('map').setView([33.5900, 130.4010], 13);
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
@@ -321,7 +323,6 @@
           splash.style.opacity = '0';
           setTimeout(() => splash.style.display = 'none', 400);
         }
-        // マップの表示領域を再計算させる
         map.invalidateSize();
       }, 900);
     }
@@ -349,7 +350,6 @@
         $('#acc-box').toggleClass('inside');
       });
 
-      // ページ読み込み完了後にマップ初期化を実行
       initMap();
     });
   </script>
