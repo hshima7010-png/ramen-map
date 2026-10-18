@@ -6,6 +6,8 @@
   <title>FUKUOKA RAMEN MAP</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Noto Sans JP', sans-serif; }
@@ -26,7 +28,7 @@
     #splash-bar   { position: absolute; bottom: 0; left: 0; height: 3px; width: 0%; background: #c62d2d; animation: splashLoad 0.9s ease forwards; }
     @keyframes splashLoad { from { width: 0%; } to { width: 100%; } }
 
-    /* ===== ヘッダーバー（高さ44px） ===== */
+    /* ===== ヘッダーバー ===== */
     .site-header {
       position: fixed;
       top: 0; left: 0;
@@ -46,7 +48,7 @@
       letter-spacing: 0.18em;
     }
 
-    /* ===== ハンバーガーボタン（ヘッダー右端） ===== */
+    /* ===== ハンバーガーボタン ===== */
     .openbtn1 {
       position: fixed;
       top: 0;
@@ -85,12 +87,11 @@
       transition: top 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     }
     #g-nav.panelactive { top: 0; }
-    #g-nav.panelactive #g-nav-list {
+    #g-nav-list {
       position: fixed;
       width: 100%;
       height: 100vh;
       overflow: auto;
-      -webkit-overflow-scrolling: touch;
     }
     #g-nav ul {
       position: absolute;
@@ -111,7 +112,6 @@
     }
     #g-nav li a:hover { color: #c62d2d; }
 
-    /* ===== アコーディオン ===== */
     .l-accordion { width: 220px; margin: 0 auto; }
     .l-accordion-switch {
       cursor: pointer;
@@ -139,50 +139,39 @@
     }
     .l-accordion-links a:hover { color: #c62d2d; }
 
-    /* ===== マップ（ヘッダーの下から全画面） ===== */
+    /* ===== マップ ===== */
     #map {
       position: fixed;
       top: 44px;
       left: 0;
       width: 100%;
       height: calc(100% - 44px);
+      z-index: 1;
     }
 
-    /* ===== Google Maps UI調整 ===== */
-    .ui-button {
-      background: #fff;
-      border: none;
-      border-radius: 4px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-      margin: 8px;
-      padding: 0 10px;
-      font-size: 16px;
-      height: 36px;
-      cursor: pointer;
-    }
-    @media screen and (max-width: 480px) { .ui-button { display: none; } }
-    .ui-button:hover { background: #1a1a1a; color: #fff; }
-
-    .custom-map-control-button {
-      background: #fff;
-      border: none;
-      border-radius: 4px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-      margin: 8px;
-      padding: 0 12px;
+    /* トースト */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #1a1a1a;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 8px;
       font-size: 13px;
-      font-family: 'Noto Sans JP', sans-serif;
-      height: 36px;
-      cursor: pointer;
       font-weight: 500;
+      z-index: 99999;
+      opacity: 0;
+      transition: all 0.25s ease;
+      white-space: nowrap;
+      border: 0.5px solid rgba(255,255,255,0.15);
+      pointer-events: none;
     }
-    .custom-map-control-button:hover { background: #c62d2d; color: #fff; }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   </style>
 
-  <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
-  <script src="js/l-accordion.js"></script>
-  <script src="nav.js"></script>
-  <script src="js/map.js"></script>
+  <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
 </head>
 <body>
 
@@ -199,7 +188,7 @@
   </header>
 
   <!-- ハンバーガーボタン -->
-  <div class="openbtn1">
+  <div class="openbtn1" id="nav-toggle">
     <div class="openbtn-area">
       <span></span><span></span><span></span>
     </div>
@@ -210,38 +199,155 @@
     <div id="g-nav-list">
       <ul class="over">
         <li><a href="map.html">マップ</a></li>
-        <div class="l-accordion">
-          <div class="l-accordion-switch">ジャンル</div>
+        <div class="l-accordion" id="acc-box">
+          <div class="l-accordion-switch" id="acc-switch">ジャンル</div>
           <div class="l-accordion-inside">
             <div class="l-accordion-links">
-              <div><a href="#" onclick="setFilter('ラーメン');$('.openbtn1').removeClass('active');$('#g-nav').removeClass('panelactive');return false;">ラーメン</a></div>
-              <div><a href="#" onclick="setFilter('つけ麺');$('.openbtn1').removeClass('active');$('#g-nav').removeClass('panelactive');return false;">つけ麺</a></div>
-              <div><a href="#" onclick="setFilter('まぜそば');$('.openbtn1').removeClass('active');$('#g-nav').removeClass('panelactive');return false;">まぜそば</a></div>
+              <div><a href="#" onclick="setFilter('ラーメン');closeNav();return false;">ラーメン</a></div>
+              <div><a href="#" onclick="setFilter('つけ麺');closeNav();return false;">つけ麺</a></div>
+              <div><a href="#" onclick="setFilter('まぜそば');closeNav();return false;">まぜそば</a></div>
+              <div><a href="#" onclick="setFilter('all');closeNav();return false;">すべて表示</a></div>
             </div>
           </div>
         </div>
         <li><a href="okiniiri.html">お気に入り</a></li>
-        <li><a href="contact.html">お問い合わせ</a></li>
       </ul>
     </div>
   </nav>
 
   <!-- マップ -->
   <div id="map"></div>
+  <div class="toast" id="toast"></div>
 
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    window.addEventListener('load', function() {
-      var splash = document.getElementById('splash');
-      if (!splash) return;
-      setTimeout(function() {
-        splash.style.transition = 'opacity 0.4s ease';
-        splash.style.opacity = '0';
-        setTimeout(function() { splash.style.display = 'none'; }, 400);
-      }, 900);
+    // 福岡のラーメン名店データ
+    const fukuokaShops = [
+      { id: "fk_01", name: "博多一双 博多駅東本店", genre: "ラーメン", lat: 33.5898, lng: 130.4230, hours: "11:00〜24:00", closed: "無休", address: "福岡市博多区博多駅東3-1-6", menu: "豚骨ラーメン / 特製ラーメン" },
+      { id: "fk_02", name: "博多らーめん Shin-Shin 天神本店", genre: "ラーメン", lat: 33.5915, lng: 130.3985, hours: "11:00〜翌3:00", closed: "日曜日", address: "福岡市中央区天神3-2-19", menu: "博多ShinShinラーメン / 焼きラーメン" },
+      { id: "fk_03", name: "元祖長浜屋", genre: "ラーメン", lat: 33.5985, lng: 130.3912, hours: "6:00〜1:45", closed: "なし", address: "福岡市中央区長浜2-5-25", menu: "ラーメン（ベタ生・カタなどCustom可）" },
+      { id: "fk_04", name: "麺や 兼トラ", genre: "つけ麺", lat: 33.5862, lng: 130.4005, hours: "11:00〜23:00", closed: "不定休", address: "福岡市中央区渡辺通4-1-14", menu: "濃厚つけめん / 辛辛つけめん" },
+      { id: "fk_05", name: "まぜそば ラーメン 兼トラ", genre: "まぜそば", lat: 33.5880, lng: 130.3990, rating: 4.3, hours: "11:00〜22:00", closed: "無休", address: "福岡市中央区天神", menu: "台湾まぜそば / 濃厚まぜそば" },
+      { id: "fk_06", name: "博多一幸舎 総本店", genre: "ラーメン", lat: 33.5882, lng: 130.4182, hours: "11:00〜24:00", closed: "無休", address: "福岡市博多区博多駅前3-23-12", menu: "元祖泡系豚骨ラーメン" },
+      { id: "fk_07", name: "ふくちゃんラーメン 田隈本店", genre: "ラーメン", lat: 33.5480, lng: 130.3380, hours: "11:00〜21:00", closed: "火曜日", address: "福岡市早良区田隈2-24-2", menu: "チャーシューメン / ラーメン" }
+    ];
+
+    let map;
+    let markers = [];
+    let currentFilter = 'all';
+
+    function getFavorites() {
+      try { return JSON.parse(localStorage.getItem('fukuoka_ramen_favorites') || '[]'); }
+      catch(e) { return []; }
+    }
+    function saveFavorites(favs) {
+      localStorage.setItem('fukuoka_ramen_favorites', JSON.stringify(favs));
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(t._timer);
+      t._timer = setTimeout(() => t.classList.remove('show'), 2200);
+    }
+
+    function toggleFav(id) {
+      const shop = fukuokaShops.find(s => String(s.id) === String(id));
+      if (!shop) return;
+      let favs = getFavorites();
+      const exists = favs.some(f => String(f.id) === String(id));
+      if (exists) {
+        favs = favs.filter(f => String(f.id) !== String(id));
+        showToast('お気に入りから削除しました');
+      } else {
+        favs.push(shop);
+        showToast('⭐ お気に入りに追加しました');
+      }
+      saveFavorites(favs);
+    }
+
+    function buildInfoHTML(shop) {
+      const favs = getFavorites();
+      const isFav = favs.some(f => String(f.id) === String(shop.id));
+      const mapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(shop.name + ' 福岡');
+
+      return `<div style="font-family:'Noto Sans JP',sans-serif;width:240px;">
+        <div style="background:#1a1a1a;color:#fff;padding:10px 12px;border-radius:6px 6px 0 0;">
+          <div style="font-size:14px;font-weight:700;">${shop.name}</div>
+          <div style="font-size:11px;color:#ccc;">${shop.genre} · ${shop.address}</div>
+        </div>
+        <div style="padding:10px;font-size:12px;color:#333;background:#fff;">
+          <div>🕐 ${shop.hours}</div>
+          <div>🗓 定休日: ${shop.closed}</div>
+          <div style="font-size:11px;color:#666;margin-top:4px;">${shop.menu}</div>
+        </div>
+        <div style="display:flex;border-top:1px solid #eee;background:#fff;">
+          <button onclick="toggleFav('${shop.id}');this.textContent=getFavorites().some(f=>String(f.id)==='${shop.id}')?'⭐ お気に入り中':'☆ お気に入り追加';" style="flex:1;padding:8px;font-size:11px;border:none;background:none;color:#c62d2d;font-weight:bold;cursor:pointer;">
+            ${isFav ? '⭐ お気に入り中' : '☆ お気に入り追加'}
+          </button>
+          <a href="${mapsUrl}" target="_blank" style="flex:1;padding:8px;font-size:11px;color:#1a1a1a;text-decoration:none;text-align:center;display:flex;align-items:center;justify-content:center;">地図で開く →</a>
+        </div>
+      </div>`;
+    }
+
+    function initMap() {
+      map = L.map('map').setView([33.5900, 130.4010], 12);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap'
+      }).addTo(map);
+
+      fukuokaShops.forEach(shop => {
+        const color = shop.genre === 'つけ麺' ? '#e8480c' : shop.genre === 'まぜそば' ? '#ff7a2e' : '#c62d2d';
+        const icon = L.divIcon({
+          className: 'custom-pin',
+          html: `<div style="background-color: ${color}; width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.4);"></div>`,
+          iconSize: [18, 18],
+          iconAnchor: [9, 9]
+        });
+
+        const marker = L.marker([shop.lat, shop.lng], { icon: icon }).addTo(map);
+        marker.bindPopup(buildInfoHTML(shop));
+        markers.push({ marker, shop });
+      });
+    }
+
+    function setFilter(genre) {
+      currentFilter = genre;
+      markers.forEach(({ marker, shop }) => {
+        if (genre === 'all' || shop.genre === genre) {
+          if (!map.hasLayer(marker)) marker.addTo(map);
+        } else {
+          if (map.hasLayer(marker)) map.removeLayer(marker);
+        }
+      });
+    }
+
+    function closeNav() {
+      $('#nav-toggle').removeClass('active');
+      $('#g-nav').removeClass('panelactive');
+    }
+
+    // UIイベント
+    $(function() {$('#nav-toggle').on('click', function() {
+        $(this).toggleClass('active');$('#g-nav').toggleClass('panelactive');
+      });
+
+      $('#acc-switch').on('click', function() {
+        $('#acc-box').toggleClass('inside');
+      });
+
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          $('#splash').fadeOut(400);
+        }, 900);
+      });
+
+      initMap();
     });
   </script>
-
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDuOh-epC9O41rcLbHCnDgaqJiSMKHGp8g&callback=initMap" async defer></script>
-
 </body>
 </html>
